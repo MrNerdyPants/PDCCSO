@@ -1,8 +1,24 @@
 
 package baka
 
-import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.{SparkConf, SparkContext}
+
+//object SparkApp {
+//  def main(args: Array[String]): Unit = {
+//    val conf = new SparkConf().setAppName("Test Spark App").setMaster("local[*]")
+//    val sc = new SparkContext(conf)
+//    println("Spark Context created successfully!")
+//
+//    // Test with a simple operation
+//    val data = sc.parallelize(Seq(1, 2, 3, 4, 5))
+//    val result = data.map(_ * 2).collect()
+//    println(result.mkString(", "))
+//
+//    sc.stop()
+//  }
+//}
+
 
 import java.io._
 //import baka.BroadcastWrapper
@@ -51,7 +67,7 @@ object npver5 extends Serializable {
 
     println("population")
     // creating instances of objects
-    var population = (x, List.range(0, Pop)).zipped.map((x_p, i) => new baka.Crow1(x_p, Pop, dim, min, max, fitnessesC(i)))
+    var population = (x, List.range(0, Pop)).zipped.map((x_p, i) => new baka.Crow1(x_p, Pop, dim, min, max, fitnessesC(i))).toArray
     println("Population ", population, "\n|Population length : ", population.length)
 
     val sel = BroadcastWrapper(sc, selection)

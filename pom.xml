@@ -16,26 +16,58 @@
     </properties>
 
     <dependencies>
+        <!-- Scala Library -->
+        <dependency>
+            <groupId>org.scala-lang</groupId>
+            <artifactId>scala-library</artifactId>
+            <version>${scala.version}</version>
+        </dependency>
+
+        <!-- Spark Core -->
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_${scala.version.major}</artifactId>
             <version>${spark.version}</version>
         </dependency>
+
+        <!-- Spark SQL (if needed) -->
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-sql_${scala.version.major}</artifactId>
             <version>${spark.version}</version>
         </dependency>
+
+        <!-- Spark Streaming (if needed) -->
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-streaming_${scala.version.major}</artifactId>
             <version>${spark.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.spark</groupId>
-            <artifactId>spark-mllib_${scala.version.major}</artifactId>
-            <version>${spark.version}</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.scala-lang</groupId>-->
+<!--            <artifactId>scala-library</artifactId>-->
+<!--            <version>${scala.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.spark</groupId>-->
+<!--            <artifactId>spark-core_${scala.version.major}</artifactId>-->
+<!--            <version>${spark.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.spark</groupId>-->
+<!--            <artifactId>spark-sql_${scala.version.major}</artifactId>-->
+<!--            <version>${spark.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.spark</groupId>-->
+<!--            <artifactId>spark-streaming_${scala.version.major}</artifactId>-->
+<!--            <version>${spark.version}</version>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.apache.spark</groupId>-->
+<!--            <artifactId>spark-mllib_${scala.version.major}</artifactId>-->
+<!--            <version>${spark.version}</version>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.jmockit</groupId>
             <artifactId>jmockit</artifactId>

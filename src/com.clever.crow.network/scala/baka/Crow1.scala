@@ -2,8 +2,6 @@
 
 package baka
 
-import scala.collection.mutable
-
 class Crow1(var crow: Array[Double], var pop: Int, var Dim: Int, var min: Double, var max: Double, var fitnesses: Double) extends Serializable {
 
   //Array for crow position x at 'i'th iteration
@@ -70,9 +68,9 @@ class Crow1(var crow: Array[Double], var pop: Int, var Dim: Int, var min: Double
 
   //NLS
   // applies NLS to ith crow by sending it towards the random neighborhood crow
-  def NLS(x_i: Array[Double], m_local: Array[Double], fl: Double): mutable.ArraySeq[Double] = {
+  def NLS(x_i: Array[Double], m_local: Array[Double], fl: Double): Array[Double] = {
     var nls = (x_i, m_local).zipped.map((xi, mc) => xi + fl * scala.util.Random.nextDouble() * (mc - xi))
-    return nls
+    return nls.toArray
   }
 
 
@@ -130,8 +128,8 @@ class Crow1(var crow: Array[Double], var pop: Int, var Dim: Int, var min: Double
   }
 
   //To get random position value for crow version1.2
-  def prc(crow1: Array[Double], crow2: Array[Double]): mutable.ArraySeq[Double] = {
-    (crow1, crow2).zipped.map((c1, c2) => if (c1 < c2) (c1 + scala.util.Random.nextDouble() * (c2 - c1)) else (c2 + scala.util.Random.nextDouble() * (c1 - c2)))
+  def prc(crow1: Array[Double], crow2: Array[Double]): Array[Double] = {
+    (crow1, crow2).zipped.map((c1, c2) => if (c1 < c2) (c1 + scala.util.Random.nextDouble() * (c2 - c1)) else (c2 + scala.util.Random.nextDouble() * (c1 - c2))).toArray
   }
 
 
