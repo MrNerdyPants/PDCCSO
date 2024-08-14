@@ -2,6 +2,8 @@
 
 package baka
 
+import scala.math.abs
+
 class Crow1(var crow: Array[Double], var pop: Int, var Dim: Int, var min: Double, var max: Double, var fitnesses: Double) extends Serializable {
 
   //Array for crow position x at 'i'th iteration
@@ -14,13 +16,13 @@ class Crow1(var crow: Array[Double], var pop: Int, var Dim: Int, var min: Double
   var f: Double = fitnesses
 
   //storing the overall best fitness value of the crow 
-  var fbest: Double = fitnesses
+  var fBest: Double = fitnesses
 
 
   //Update memory function.... i am not using this right now...
   // Definition 1  
-  def updatemem(x_i: Array[Double], m_i: Array[Double], f: Double, fbest: Double): Array[Double] = {
-    if (f < fbest) {
+  def updateMem(x_i: Array[Double], m_i: Array[Double], f: Double, fBest: Double): Array[Double] = {
+    if (f < fBest) {
       return x_i
     }
     else {
@@ -31,9 +33,9 @@ class Crow1(var crow: Array[Double], var pop: Int, var Dim: Int, var min: Double
 
   //I was using this neighbour function in the previous functions 
   //Definition 2 generating neighborhood
-  def neighbor(xi: Array[Double], x_mj: Array[Double], F: Double, Fbestj: Double, sumF: Double): Double = {
+  def neighbor(xi: Array[Double], x_mj: Array[Double], F: Double, fBestJ: Double, sumF: Double): Double = {
     val alpha: Double = 0.02
-    val w = (alpha + (F - Fbestj)) / sumF
+    val w = (alpha + (F - fBestJ)) / sumF
     return ed(xi, x_mj) * w
   }
 
@@ -60,9 +62,9 @@ class Crow1(var crow: Array[Double], var pop: Int, var Dim: Int, var min: Double
   //Definition 2 for (fi - fbestk)
   def sumf(Fi: Double, Fbest: Array[Double], k: Int, len: Int): Double = {
     if (k < len) {
-      return (Fi - Fbest(k)) + sumf(Fi, Fbest, k + 1, len)
+      return abs((Fi - Fbest(k))) + sumf(Fi, Fbest, k + 1, len)
     }
-    return 0
+    return 0.02
   }
 
 
@@ -104,8 +106,10 @@ class Crow1(var crow: Array[Double], var pop: Int, var Dim: Int, var min: Double
 
   //check the x:Array and corrects it
   def CC(x: Array[Double]): Array[Double] = {
-    return x.map(a => if (a < min || a > max) {
+    return x.map(a => if (a < min) {
       (min + scala.util.Random.nextDouble() * (max - min))
+    } else if (a > max) {
+      (max - scala.util.Random.nextDouble() * (max - min))
     } else {
       a
     })

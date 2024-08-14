@@ -1,8 +1,11 @@
 
 package baka
 
+import org.apache.commons.math3.util.FastMath.floor
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
+
+import scala.collection.mutable.ArrayBuffer
 
 //object SparkApp {
 //  def main(args: Array[String]): Unit = {
@@ -37,7 +40,7 @@ object npver5 extends Serializable {
 
     val conf = new SparkConf().setAppName("SCCSA").setMaster("local[*]")
     val sc = new SparkContext(conf)
-    val numSlices = 4
+    val numSlices = 2
 
 
     //i=traversing through pop of crows
@@ -71,7 +74,7 @@ object npver5 extends Serializable {
     println("Population ", population, "\n|Population length : ", population.length)
 
     val sel = BroadcastWrapper(sc, selection)
-    var sortedpopulation = population.sortWith(_.fbest < _.fbest).clone()
+    var sortedpopulation = population.sortWith(_.fBest < _.fBest).clone()
     val perc = ((((population.length).toDouble / (100).toDouble).toDouble * selection) / numSlices).toInt
     //val broadcastVar = BroadcastWrapper(  sc,  sortedpopulation.slice(0, (((newperc*Pop).ceil.toInt)))  )
     val broadcastVar = BroadcastWrapper(sc, sortedpopulation.take(perc))
@@ -95,7 +98,7 @@ object npver5 extends Serializable {
     var mc = 0
     while (t < max_it) {
 
-      l1 = sortedpopulation(0).fbest
+      l1 = sortedpopulation(0).fBest
       /*
        if(cflag==true){
          val rem=Pop-sortedpopulation.length
@@ -114,6 +117,7 @@ object npver5 extends Serializable {
       val RDD = para.mapPartitionsWithIndex {
         (idx, iterator) =>
           //variable iniatlizations
+//          print("partition :" + idx)
 
 
           //println("Partition ",idx)
@@ -127,7 +131,7 @@ object npver5 extends Serializable {
           var node_t = 0
           val node_mi = mii.value
           var top2 = top2crow.value
-          var topchk = crows.sortWith(_.fbest < _.fbest) //.take(2)
+          var topchk = crows.sortWith(_.fBest < _.fBest) //.take(2)
           var i = 0
           val partitionsize = crows.length
           while (node_t < node_mi) {
@@ -140,49 +144,75 @@ object npver5 extends Serializable {
               // for finding the "out" for crow(i) with respect to all other crows
               //var i_kDiff=population(i).sumf(population(i).f,population.map(_.fbest).toArray ,0)
               //println("i_kDiff = ",i_kDiff)
-              var i_kDiff = (crows(i).sumf(crows(i).f, crows.map(_.fbest).toArray, 0, crows.length)) //diff=crows(i).sumf(crows(i).f,crows.map(_.fbest).toArray ,0,crows.length)
-              if (max == 32) {
-                i_kDiff *= (-1.000000)
-              }
+              var i_kDiff = (crows(i).sumf(crows(i).f, crows.map(_.fBest).toArray, 0, crows.length)) //diff=crows(i).sumf(crows(i).f,crows.map(_.fbest).toArray ,0,crows.length)
+              //              if (max == 32) {
+              //                i_kDiff *= (-1.000000)
+              //              }
               //i_kDiff*=(-1.00)
               //println("diff = ",diff)
               //neeeded var out=List.range(0,crows.length).map((j)=>crows(i).neighbor(crows(i).x, crows(j).y, crows(i).f, crows(j).fbest, i_kDiff ) )
-              var out: Array[Double] = new Array[Double]((crows.length - 1))
-              var oindex = 0
-              for (j <- 0 until crows.length) {
-                if (j != i) {
-                  out(oindex) = crows(i).neighbor(crows(i).x, crows(j).y, crows(i).f, crows(j).fbest, i_kDiff)
-                  oindex += 1
-                }
-              }
-              oindex = 0
+
+              val out: Array[Double] = (0 until crows.length)
+                .filter(_ != i) // Exclude the index `i`
+                .map { j =>
+                  crows(i).neighbor(crows(i).x, crows(j).y, crows(i).f, crows(j).fBest, i_kDiff)
+                }.toArray
+
+              //              var out: Array[Double] = new Array[Double]((crows.length - 1))
+              //              var oindex = 0
+              //              for (j <- 0 until crows.length) {
+              //                if (j != i) {
+              //                  out(oindex) = crows(i).neighbor(crows(i).x, crows(j).y, crows(i).f, crows(j).fBest, i_kDiff)
+              //                  oindex += 1
+              //                }
+              //              }
+              //              oindex = 0
               //println("out ",out)
               // var out=List.range(0,crows.length).map((j)=>crows(i).Neighbor(crows(i).x, crows(j).y ) )
               //the Mu =mean of "out"
               var mu: Double = mean(out.toList)
 
-              //creating Neigh and Non-Neigh
-              var neigh = new Array[Int](crows.length)
-              var N: Int = 0
-              var non_Neigh = new Array[Int](crows.length)
-              var Non_N: Int = 0
+              //              //creating Neigh and Non-Neigh
 
+              // Initialize buffers to dynamically store neighbor and non-neighbor indices
+              val neighBuffer = ArrayBuffer[Int]()
+              val nonNeighBuffer = ArrayBuffer[Int]()
+
+              // Iterate over all crows to classify them into neighbors and non-neighbors
               for (z <- 0 until crows.length - 1) {
-
-                // if(z!=i){
                 if (out(z) < mu) {
-                  neigh(N) = z
-                  N += 1
+                  neighBuffer += z
                 } else if (out(z) >= mu) {
-                  non_Neigh(Non_N) = z
-                  Non_N += 1
+                  nonNeighBuffer += z
                 }
-                //  }
-
               }
-              //slicing the length of the arrays
-              neigh = neigh.slice(0, N)
-              non_Neigh = non_Neigh.slice(0, Non_N)
+
+              // Convert buffers to arrays
+              val neigh = neighBuffer.toArray
+              var non_Neigh = nonNeighBuffer.toArray
+
+
+              //              var neigh = new Array[Int](crows.length)
+              //              var N: Int = 0
+              //              var non_Neigh = new Array[Int](crows.length)
+              //              var Non_N: Int = 0
+              //
+              //              for (z <- 0 until crows.length - 1) {
+              //
+              //                // if(z!=i){
+              //                if (out(z) < mu) {
+              //                  neigh(N) = z
+              //                  N += 1
+              //                } else if (out(z) >= mu) {
+              //                  non_Neigh(Non_N) = z
+              //                  Non_N += 1
+              //                }
+              //                //  }
+              //
+              //              }
+              //              //slicing the length of the arrays
+              //              neigh = neigh.slice(0, N)
+              //              non_Neigh = non_Neigh.slice(0, Non_N)
               //Now we have list of Neigh and Non_Neigh contain9ing the indexes of the crows
 
               var local: Int = 0
@@ -208,7 +238,7 @@ object npver5 extends Serializable {
 
               try {
                 //selecting global best crow from Non-Neigh
-                non_Neigh = non_Neigh.sortWith(crows(_).fbest < crows(_).fbest).clone()
+                non_Neigh = non_Neigh.sortWith(crows(_).fBest < crows(_).fBest).clone()
 
                 global = non_Neigh(0)
               }
@@ -253,7 +283,7 @@ object npver5 extends Serializable {
 
 
               //Deciding Strategy
-              if (crows(local).fbest < crows(global).fbest) {
+              if (crows(local).fBest < crows(global).fBest) {
                 //call NLS
                 crows(i).x = crows(i).NLS(crows(i).x, crows(local).y, Fl)
               }
@@ -268,50 +298,50 @@ object npver5 extends Serializable {
               //calling fitness function
               crows(i).f = baka.testfunction.matchTest(crows(i).x, casef)
 
-              /*
+
               //old strategy... but you can uncomment it and comment the PRC to check the difference in result
               //var best2=top2crow.value
               //Call WAS to make the crow wander
-              if (crows(i).fbest<crows(i).fitnesses){
-              //deciding random jumps between 50
-                var randjump =scala.util.Random.nextInt(50)+1
+              if (crows(i).fBest < crows(i).fitnesses) {
+                //deciding random jumps between 50
+                var randjump = floor((scala.util.Random.nextDouble() * dim)).toInt + 1
                 //full flight length
-                var ffl=crows(0).flight(max_it, 1)
+                //                var ffl = crows(0).flight(max_it, 1)
                 // this for random number of jumps
-                for(j<-0 until randjump){
-                //to get index for random crow from the population
-                  val x_r=scala.util.Random.nextInt(crows.length)
+                for (j <- 0 until randjump) {
+                  //to get index for random crow from the population
+                  val x_r = scala.util.Random.nextInt(crows.length)
                   //calling the WAS strategy
-                  crows(i).x=crows(i).WAS(crows(i).x,crows(x_r).x,top2(0),ffl).toArray
+                  crows(i).x = crows(i).WAS(crows(i).x, crows(x_r).x, top2(0), Fl).toArray
                 }
-                val resprc=baka.testfunction.matchTest( crows(i).x,casef)
-                  crows(i).f=resprc
-
-              }
-              */
-
-
-              // Calling PRC
-              //creating probability factor similar to the one in simulated anealing
-              val probability = math.exp((-(math.abs(crows(i).fbest - crows(i).f))) / Fl)
-              //condition for PRC
-              if ((probability > scala.util.Random.nextDouble()) && crows(i).f > crows(i).fbest) {
-                //get top crows
-                //top2=top2crow.value
-                // generating random crow in between the two crows
-                val randcrow = crows(i).prc(top2(0), top2(1))
-                val resprc = baka.testfunction.matchTest(randcrow, casef)
-                crows(i).x = randcrow.clone()
+                val resprc = baka.testfunction.matchTest(crows(i).x, casef)
                 crows(i).f = resprc
 
-
               }
+
+
+
+              //              // Calling PRC
+              //              //creating probability factor similar to the one in simulated anealing
+              //              val probability = math.exp((-(math.abs(crows(i).fBest - crows(i).f))) / Fl)
+              //              //condition for PRC
+              //              if ((probability > scala.util.Random.nextDouble()) && crows(i).f > crows(i).fBest) {
+              //                //get top crows
+              //                //top2=top2crow.value
+              //                // generating random crow in between the two crows
+              //                val randcrow = crows(i).prc(top2(0), top2(1))
+              //                val resprc = baka.testfunction.matchTest(randcrow, casef)
+              //                crows(i).x = randcrow.clone()
+              //                crows(i).f = resprc
+              //
+              //
+              //              }
 
 
               //Definition 1 updating memory
-              if (crows(i).f < crows(i).fbest) {
+              if (crows(i).f < crows(i).fBest) {
                 crows(i).y = crows(i).x.clone()
-                crows(i).fbest = crows(i).f
+                crows(i).fBest = crows(i).f
               }
 
               i += 1
@@ -319,9 +349,9 @@ object npver5 extends Serializable {
             }
             i = 0
             node_t += 1
-            topchk = crows.sortWith(_.fbest < _.fbest).clone()
+            topchk = crows.sortWith(_.fBest < _.fBest).clone()
             val tmpres = baka.testfunction.matchTest(top2(0), casef)
-            if (topchk(0).fbest < tmpres) {
+            if (topchk(0).fBest < tmpres) {
               top2(0) = topchk(0).y
               top2(1) = topchk(1).y
             }
@@ -353,10 +383,10 @@ object npver5 extends Serializable {
 
       sortedpopulation = RDD.collect()
       //RDD.unpersist()
-      sortedpopulation = sortedpopulation.sortWith(_.fbest < _.fbest).clone()
+      sortedpopulation = sortedpopulation.sortWith(_.fBest < _.fBest).clone()
 
 
-      l2 = sortedpopulation(0).fbest
+      l2 = sortedpopulation(0).fBest
       var delta1 = 1 + (l2 - l1).abs
       if (t == mi) {
         delta2 = delta1 - 1
@@ -384,7 +414,7 @@ object npver5 extends Serializable {
       top2crow.update(topcrow)
 
 
-      convergence(con_t) = sortedpopulation(0).fbest
+      convergence(con_t) = sortedpopulation(0).fBest
       converge_address = sortedpopulation(0).y.clone()
 
       println("fbest at t=", t + mi, "is val=", convergence(con_t))
