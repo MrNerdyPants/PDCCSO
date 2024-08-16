@@ -1,0 +1,11 @@
+This directory contains the C++ source code of some tests used to validate the LSGO Scala implementation.
+The input samples and the test results are witten both to the standard output and to output files to be compared with the results of the Scala implementation of the benchmark.
+
+To run the tests do the following:
+1. Download and unzip the LSGO2013 original source code from http://www.tflsgo.org/assets/cec2018/lsgo_2013_benchmarks_original.zip
+2. Copy the Makefile and test.cpp files in this directory to the cpp subdirectory of the unzip destination folder
+3. The default path for the "cdatafiles" directory and output files is "/tmp". To change this edit the initial value of the "path" variable in the test.cpp file
+4. Compile with "make test"
+5. Run with "./test id [samples]" ("./test 0" for help)
+
+The cdatafiles of the original C++ code are also copied here for convenience to be packaged in the distribution artifacts.
