@@ -5,26 +5,8 @@ import org.apache.commons.math3.util.FastMath.floor
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
-import scala.collection.mutable.ArrayBuffer
-
-//object SparkApp {
-//  def main(args: Array[String]): Unit = {
-//    val conf = new SparkConf().setAppName("Test Spark App").setMaster("local[*]")
-//    val sc = new SparkContext(conf)
-//    println("Spark Context created successfully!")
-//
-//    // Test with a simple operation
-//    val data = sc.parallelize(Seq(1, 2, 3, 4, 5))
-//    val result = data.map(_ * 2).collect()
-//    println(result.mkString(", "))
-//
-//    sc.stop()
-//  }
-//}
-
-
 import java.io._
-//import baka.BroadcastWrapper
+import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 
 object npver5 extends Serializable {
@@ -89,6 +71,11 @@ object npver5 extends Serializable {
     var para: RDD[Crow1] = sc.parallelize(population, numSlices).persist()
 
     var fl = BroadcastWrapper(sc, population(0).flight(max_it, t))
+    val hashMap = HashMap[String, Int]()
+    hashMap += ("t" -> t)
+    hashMap += ("max_it" -> max_it)
+    var iter = BroadcastWrapper(sc, hashMap)
+
     var cflag = BroadcastWrapper(sc, false)
     var delta1: Double = 0
     var delta2: Double = 0
@@ -99,34 +86,28 @@ object npver5 extends Serializable {
     while (t < max_it) {
 
       l1 = sortedpopulation(0).fBest
-      /*
-       if(cflag==true){
-         val rem=Pop-sortedpopulation.length
-         val remx=List.fill(rem)(population(0).prc(sortedpopulation(0).y, sortedpopulation(scala.util.Random.nextInt(sortedpopulation.length)/*sortedpopulation.length*/).y))
-         val remf=remx.map(baka.testfunction.matchTest(_, casef))
-         val rempop=(remx,List.range(0,rem)).zipped.map((x_p,i)=>new baka.Crow1(x_p, Pop, dim, min, max,remf(i)))
-         para=sc.parallelize(sortedpopulation++rempop, numSlices).persist()
-         cflag=false
-       }
-       */
+
       //stores the flight length
       fl.update(population(0).flight(max_it, t))
       println("flight length ", fl.value)
+
+      hashMap += ("t" -> t)
+      hashMap += ("max_it" -> max_it)
+      iter.update(hashMap)
 
 
       val RDD = para.mapPartitionsWithIndex {
         (idx, iterator) =>
           //variable iniatlizations
-//          print("partition :" + idx)
+          //          print("partition :" + idx)
 
 
           //println("Partition ",idx)
           var crows = iterator.toArray
           var bestsol = broadcastVar.value
           crows = crows ++ bestsol
-          /*for(i<-0 until bestsol.length){
-            crows(i)=bestsol(i)
-          }*/
+
+          val inter_Iter = iter.value
           var Fl = fl.value
           var node_t = 0
           val node_mi = mii.value
@@ -136,21 +117,15 @@ object npver5 extends Serializable {
           val partitionsize = crows.length
           while (node_t < node_mi) {
 
+            Fl = crows(0).flight(inter_Iter("max_it"), inter_Iter("t") + node_t)
 
             //Main loop for traversing through population
             while (i < partitionsize) {
 
 
               // for finding the "out" for crow(i) with respect to all other crows
-              //var i_kDiff=population(i).sumf(population(i).f,population.map(_.fbest).toArray ,0)
-              //println("i_kDiff = ",i_kDiff)
               var i_kDiff = (crows(i).sumf(crows(i).f, crows.map(_.fBest).toArray, 0, crows.length)) //diff=crows(i).sumf(crows(i).f,crows.map(_.fbest).toArray ,0,crows.length)
-              //              if (max == 32) {
-              //                i_kDiff *= (-1.000000)
-              //              }
-              //i_kDiff*=(-1.00)
-              //println("diff = ",diff)
-              //neeeded var out=List.range(0,crows.length).map((j)=>crows(i).neighbor(crows(i).x, crows(j).y, crows(i).f, crows(j).fbest, i_kDiff ) )
+
 
               val out: Array[Double] = (0 until crows.length)
                 .filter(_ != i) // Exclude the index `i`
@@ -158,138 +133,48 @@ object npver5 extends Serializable {
                   crows(i).neighbor(crows(i).x, crows(j).y, crows(i).f, crows(j).fBest, i_kDiff)
                 }.toArray
 
-              //              var out: Array[Double] = new Array[Double]((crows.length - 1))
-              //              var oindex = 0
-              //              for (j <- 0 until crows.length) {
-              //                if (j != i) {
-              //                  out(oindex) = crows(i).neighbor(crows(i).x, crows(j).y, crows(i).f, crows(j).fBest, i_kDiff)
-              //                  oindex += 1
-              //                }
-              //              }
-              //              oindex = 0
-              //println("out ",out)
-              // var out=List.range(0,crows.length).map((j)=>crows(i).Neighbor(crows(i).x, crows(j).y ) )
+
               //the Mu =mean of "out"
               var mu: Double = mean(out.toList)
 
               //              //creating Neigh and Non-Neigh
 
-              // Initialize buffers to dynamically store neighbor and non-neighbor indices
-              val neighBuffer = ArrayBuffer[Int]()
-              val nonNeighBuffer = ArrayBuffer[Int]()
+              val neighbours: ArrayBuffer[Crow1] = ArrayBuffer[Crow1]();
+              var non_Neighbours: ArrayBuffer[Crow1] = ArrayBuffer[Crow1]();
 
               // Iterate over all crows to classify them into neighbors and non-neighbors
               for (z <- 0 until crows.length - 1) {
                 if (out(z) < mu) {
-                  neighBuffer += z
+                  //                  neighBuffer += z
+                  neighbours += crows(z)
                 } else if (out(z) >= mu) {
-                  nonNeighBuffer += z
+                  //                  nonNeighBuffer += z
+                  non_Neighbours += crows(z)
                 }
               }
 
-              // Convert buffers to arrays
-              val neigh = neighBuffer.toArray
-              var non_Neigh = nonNeighBuffer.toArray
+
+              //selecting random local crow
+              var randomindex: Int = scala.util.Random.nextInt(neighbours.length)
+              var local: Crow1 = neighbours(randomindex)
 
 
-              //              var neigh = new Array[Int](crows.length)
-              //              var N: Int = 0
-              //              var non_Neigh = new Array[Int](crows.length)
-              //              var Non_N: Int = 0
-              //
-              //              for (z <- 0 until crows.length - 1) {
-              //
-              //                // if(z!=i){
-              //                if (out(z) < mu) {
-              //                  neigh(N) = z
-              //                  N += 1
-              //                } else if (out(z) >= mu) {
-              //                  non_Neigh(Non_N) = z
-              //                  Non_N += 1
-              //                }
-              //                //  }
-              //
-              //              }
-              //              //slicing the length of the arrays
-              //              neigh = neigh.slice(0, N)
-              //              non_Neigh = non_Neigh.slice(0, Non_N)
-              //Now we have list of Neigh and Non_Neigh contain9ing the indexes of the crows
 
-              var local: Int = 0
-              var global: Int = 0
+              //selecting global best crow from Non-Neigh
+              non_Neighbours = non_Neighbours.sortWith(_.fBest < _.fBest).clone()
 
-              try {
-                //selecting random local crow
-                var randomindex: Int = scala.util.Random.nextInt(neigh.length)
-                local = neigh(randomindex)
-              }
-              catch {
-                case e: java.lang.IllegalArgumentException => {
-                  println("Error in local")
-                  println("Value of out0 =", out(0), " out1 =", out(1), " and mu=", mu)
-                  local = scala.util.Random.nextInt(crows.length)
-                }
-                case _: java.lang.ArrayIndexOutOfBoundsException => {
-                  println("Error in local")
-                  println("Value of out0 =", out(0), " out1 =", out(1), " and mu=", mu)
-                  local = scala.util.Random.nextInt(crows.length)
-                }
-              }
-
-              try {
-                //selecting global best crow from Non-Neigh
-                non_Neigh = non_Neigh.sortWith(crows(_).fBest < crows(_).fBest).clone()
-
-                global = non_Neigh(0)
-              }
-              catch {
-                case e: java.lang.IllegalArgumentException => {
-                  println("Error in global")
-                  println("Value of out0 =", out(0), " out1 =", out(1), " and mu=", mu)
-                  var low = scala.util.Random.nextInt(crows.length)
-                  var high = scala.util.Random.nextInt(crows.length)
-                  if (low == high) {
-                    high += 2
-                  }
-                  if (low > high) {
-                    low = low + high
-                    high = low - high
-                    low = low - high
-                  }
-                  global = (low + scala.util.Random.nextInt() * (high - low))
-                }
-
-                case _: java.lang.ArrayIndexOutOfBoundsException => {
-                  println("Error in global")
-                  println("Value of out0 =", out(0), " out1 =", out(1), " and mu=", mu)
-                  var low = scala.util.Random.nextInt(crows.length)
-                  var high = scala.util.Random.nextInt(crows.length)
-                  println("before set \nLow :", low, " High :", high)
-                  if (low == high) {
-                    high += 2
-                  }
-                  if (low > high) {
-                    low = low + high
-                    high = low - high
-                    low = low - high
-                  }
-                  println("after set \nLow :", low, " High :", high)
-                  global = (low + scala.util.Random.nextDouble() * (high - low)).toInt
-                  println("Random for global: ", global, "\n Crows length :", crows.length, " for partition : ", idx)
-                }
-              }
-
+              var global: Crow1 = non_Neighbours(0)
 
 
 
               //Deciding Strategy
-              if (crows(local).fBest < crows(global).fBest) {
+              if (local.fBest < global.fBest) {
                 //call NLS
-                crows(i).x = crows(i).NLS(crows(i).x, crows(local).y, Fl)
+                crows(i).x = crows(i).NLS(crows(i).x, local.y, Fl)
               }
               else {
                 //call NGS
-                crows(i).x = crows(i).NGS(crows(i).x, crows(global).y, Fl)
+                crows(i).x = crows(i).NGS(crows(i).x, global.y, Fl)
               }
 
               //to check and correct the crow
@@ -300,7 +185,6 @@ object npver5 extends Serializable {
 
 
               //old strategy... but you can uncomment it and comment the PRC to check the difference in result
-              //var best2=top2crow.value
               //Call WAS to make the crow wander
               if (crows(i).fBest < crows(i).fitnesses) {
                 //deciding random jumps between 50
@@ -361,23 +245,8 @@ object npver5 extends Serializable {
           node_t = 0
 
 
-
-          //val select=((brdperc.value*crows.length).ceil.toInt)
-
-          /* //replace the population at random
-           for(i<-0 until selection){
-             crows(0 + scala.util.Random.nextInt()*(selection - 0))=sortedpopulation(i)
-           }*/
-
-
-          //var selected=crows.sortWith(_.fbest<_.fbest).slice(0, select)
           var selected = /*crows.sortWith(_.fbest<_.fbest)*/ topchk.take((((sel.value.toDouble * (crows.length).toDouble / (100).toDouble))).toInt) //.take((crows.length/100)*20)
 
-          //var selected=crows.slice(0, select)
-          //println("select=",select)
-          //broadcastVar.update(selected.clone())
-          //brdtest.update(selected)
-          // println("done")
           selected.toIterator
       }.persist()
 
