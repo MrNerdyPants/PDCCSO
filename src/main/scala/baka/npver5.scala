@@ -5,7 +5,7 @@ import org.apache.commons.math3.util.FastMath.floor
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
-import java.io._
+//import java.io._
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 
@@ -14,7 +14,7 @@ object npver5 extends Serializable {
 
   //taking mean of ' out ' for generating neighborhood
   def mean(arr: List[Double]): Double = {
-    return (arr.sum / arr.length).toFloat
+    return (arr.sum / arr.length).toDouble
   }
 
 
@@ -72,8 +72,10 @@ object npver5 extends Serializable {
 
     var fl = BroadcastWrapper(sc, population(0).flight(max_it, t))
     val hashMap = HashMap[String, Int]()
-    hashMap += ("t" -> t)
-    hashMap += ("max_it" -> max_it)
+//    hashMap += ("t" -> t)
+//    hashMap += ("max_it" -> max_it)
+    hashMap("t") = t
+    hashMap("max_it") = max_it
     var iter = BroadcastWrapper(sc, hashMap)
 
     var cflag = BroadcastWrapper(sc, false)
@@ -91,8 +93,10 @@ object npver5 extends Serializable {
       fl.update(population(0).flight(max_it, t))
       println("flight length ", fl.value)
 
-      hashMap += ("t" -> t)
-      hashMap += ("max_it" -> max_it)
+//      hashMap += ("t" -> t)
+//      hashMap += ("max_it" -> max_it)
+      hashMap("t") = t
+      hashMap("max_it") = max_it
       iter.update(hashMap)
 
 
@@ -105,7 +109,7 @@ object npver5 extends Serializable {
           //println("Partition ",idx)
           var crows = iterator.toArray
           var bestsol = broadcastVar.value
-          crows = crows ++ bestsol
+          crows = (crows ++ bestsol).toArray
 
           val inter_Iter = iter.value
           var Fl = fl.value
@@ -155,7 +159,14 @@ object npver5 extends Serializable {
 
 
               //selecting random local crow
-              var randomindex: Int = scala.util.Random.nextInt(neighbours.length)
+              var randomindex: Int = 0
+              try {
+                randomindex = scala.util.Random.nextInt(neighbours.length)
+              } catch {
+                case e: Exception =>
+                  println("length: " , neighbours.length)
+//                  e.printStackTrace()
+              }
               var local: Crow1 = neighbours(randomindex)
 
 

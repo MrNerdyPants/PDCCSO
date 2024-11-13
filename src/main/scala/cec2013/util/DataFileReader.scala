@@ -100,7 +100,7 @@ object DataFileReader {
     private val cdatapath: String =
 //      "cec2013/cdatafiles/"
 //      "src/main/resources/cec2013/cdatafiles/"
-          "C:\\Users\\LENOVO\\Desktop\\Learn\\Personal Project\\PDCCSO\\src\\main\\resources\\cec2013\\cdatafiles\\"
+          "D:\\Personel\\Desktop\\Learn\\Personal Project\\PDCCSO\\src\\main\\resources\\cec2013\\cdatafiles\\"
 
     /** reads a cdatafile as a resource using a given parser
      *

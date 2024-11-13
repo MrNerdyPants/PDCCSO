@@ -21,10 +21,10 @@ object Main {
     //Data Members for initialization\
     //getting inputs
     println("Enter the Population:")
-    val pop: Int = 25 //scala.io.StdIn.readLine.toInt//args(0).toInt//scala.io.StdIn.readLine.toInt//
+    val pop: Int = 30 //scala.io.StdIn.readLine.toInt//args(0).toInt//scala.io.StdIn.readLine.toInt//
 
     println("Enter the Dimensions:")
-    val dim: Int = 25 //scala.io.StdIn.readLine.toInt//args(1).toInt//scala.io.StdIn.readLine.toInt//
+    val dim: Int = 100 //scala.io.StdIn.readLine.toInt//args(1).toInt//scala.io.StdIn.readLine.toInt//
 
     println("Enter the Min Range:")
     val min: Double = -5.12 //scala.io.StdIn.readLine.toDouble//args(2).toDouble//scala.io.StdIn.readLine.toDouble//
@@ -40,7 +40,7 @@ object Main {
     // selection=(selection/100)*pop
 
     println("Enter the Function case :")
-    val casef: String = "2" //scala.io.StdIn.readLine.toString//args(6).toString//scala.io.StdIn.readLine.toString//
+    val casef: String = "1" //scala.io.StdIn.readLine.toString//args(6).toString//scala.io.StdIn.readLine.toString//
 
     println("Enter the migration interval :")
     val mi: Int = 1000 //scala.io.StdIn.readLine.toInt//args(7).toString//scala.io.StdIn.readLine.toString//

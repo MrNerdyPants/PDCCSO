@@ -1,6 +1,7 @@
 package baka
 
-import cec2013.Benchmark.{F1, F11, F2, F5, F9}
+import baka.oFunctions.{Rastrigin, ShiftedAckleyFunction, ShiftedElliptic, ShiftedRastrigin}
+import cec2013.Benchmark.{F1, F11, F2}
 
 object testfunction {
 
@@ -17,12 +18,17 @@ object testfunction {
 
     c match {
 
-      case "1" => {
-        res = baka.oFunctions.ShiftedElliptic(x)
-        res = f1(x.toVector)
-      }
-      case "2" => res = baka.oFunctions.ShiftedRastrigin(x)
-      case "3" => res = baka.oFunctions.ShiftedAckleyFunction(x)
+//      case "0" => res = x.product
+//      case "1" => {
+//        res = baka.oFunctions.ShiftedElliptic(x)
+//        res = f1(x.toVector)
+//      }
+//      case "2" => res = baka.oFunctions.ShiftedRastrigin(x)
+//      case "3" => res = baka.oFunctions.ShiftedAckleyFunction(x)
+     case "0" => res = x.map(xi => xi).product
+      case "1" => res = Rastrigin(x,x.length)//ShiftedElliptic(x)
+      case "2" => res = ShiftedRastrigin(x)
+      case "3" => res = ShiftedAckleyFunction(x)
       case "4" => res = baka.oFunctions.Ackley(x)
       case "5" => res = baka.oFunctions.ShiftedRotatedEllipticFunction(x)
       case "6" => res = baka.oFunctions.ShiftedRotatedRastriginFunction(x)

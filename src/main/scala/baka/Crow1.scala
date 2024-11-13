@@ -85,7 +85,7 @@ def sumf(Fi: Double, Fbest: Array[Double], k: Int, len: Int): Double = {
     i += 1
   }
   sum
-//  + 0.02 // Adding the 0.02 at the end
+  + 0.000000002 // Adding the 0.02 at the end
 }
 
 
