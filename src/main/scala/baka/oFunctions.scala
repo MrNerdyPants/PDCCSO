@@ -14,7 +14,7 @@ case object oFunctions {
 
   var func = ""
 
-  var basePath = "D:\\Personel\\Desktop\\Learn\\Personal Project\\PDCCSO\\src\\main\\resources\\files\\"
+  var basePath = "D:\\Perosnal\\Practice Projects\\PDCCSO\\src\\main\\resources\\files\\"
 
 
   //'''''''''''''''''''''''''''''''''' Read Files ''''''''''''
